@@ -1,7 +1,18 @@
 import pytest
+import requests
+from config.config import Config
+import json
 from utils.api_client import APIClient
 
 class BaseTest:
+    """Base test class with common functionality"""
+    
+    def setup_method(self):
+        """Setup method run before each test"""
+        self.base_endpoint = Config.BASE_URL
+        self.api_client = requests.Session()
+        print(f"\nUsing endpoint: {self.base_endpoint}")
+    
     @pytest.fixture(autouse=True)
     def setup(self):
         """Setup method that runs before each test"""
@@ -47,13 +58,19 @@ class BaseTest:
         """Validate response against JSON schema"""
         try:
             from jsonschema import validate
-            validate(instance=response.json(), schema=schema)
-            return True
+            response_json = response.json()
+            print(f"\nValidating schema for response: {json.dumps(response_json, indent=2)[:500]}")
+            validate(instance=response_json, schema=schema)
         except Exception as e:
-            pytest.fail(f"Response schema validation failed: {str(e)}")
+            print(f"Schema validation error: {str(e)}")
+            raise
             
     def assert_status_code(self, response, expected_status_code):
         """Assert response status code"""
+        print(f"\nResponse Status: {response.status_code}")
+        print(f"Response Headers: {json.dumps(dict(response.headers), indent=2)}")
+        print(f"Response Body: {response.text[:1000]}")  # First 1000 chars to avoid huge output
+        
         assert response.status_code == expected_status_code, \
             f"Expected status code {expected_status_code}, but got {response.status_code}"
             

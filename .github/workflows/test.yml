@@ -45,31 +45,74 @@ jobs:
     - name: Check API Health
       run: |
         echo "Checking API health..."
-        for i in {1..5}; do
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://api.restful-api.dev/objects)
-          if [ "$HTTP_CODE" == "200" ]; then
-            echo "API is healthy!"
+        check_endpoint() {
+          local endpoint=$1
+          local method=$2
+          echo "Testing $method $endpoint"
+          response=$(curl -s -X $method -w "\n%{http_code}" $endpoint)
+          status_code=$(echo "$response" | tail -n1)
+          response_body=$(echo "$response" | sed '$d')
+          echo "Status code: $status_code"
+          echo "Response body: $response_body"
+          return $([ "$status_code" -lt 500 ])
+        }
+
+        API_BASE="https://api.restful-api.dev/objects"
+        
+        # Test main endpoints
+        for i in {1..3}; do
+          echo "Attempt $i:"
+          
+          # Test GET all objects
+          check_endpoint "$API_BASE" "GET"
+          get_status=$?
+          
+          # Test GET single object
+          check_endpoint "$API_BASE/1" "GET"
+          get_single_status=$?
+          
+          if [ $get_status -eq 0 ] && [ $get_single_status -eq 0 ]; then
+            echo "API is responding correctly!"
             break
           fi
-          if [ $i == 5 ]; then
-            echo "API health check failed after 5 attempts"
+          
+          if [ $i -eq 3 ]; then
+            echo "API health check failed after 3 attempts"
             exit 1
           fi
-          echo "Attempt $i failed with status $HTTP_CODE. Retrying in 10 seconds..."
+          
+          echo "Retrying in 10 seconds..."
           sleep 10
         done
-        
-    - name: Run tests
-      id: run_tests
+
+    - name: Run sequential CRUD test
+      id: crud_test
       continue-on-error: true
       env:
         BASE_URL: https://api.restful-api.dev/objects
+        PYTHONUNBUFFERED: "1"
       run: |
-        pytest tests/ -v --alluredir=allure-results --reruns 3 --reruns-delay 5
+        echo "Running CRUD sequence test..."
+        pytest tests/test_crud_sequence.py -v -s --alluredir=allure-results
+        
+    - name: Run other API tests
+      id: other_tests
+      if: always()
+      continue-on-error: true
+      env:
+        BASE_URL: https://api.restful-api.dev/objects
+        PYTHONUNBUFFERED: "1"
+      run: |
+        echo "Running other API tests..."
+        pytest tests/test_get_api.py tests/test_multiple_ids_api.py -v -s --alluredir=allure-results --reruns 3 --reruns-delay 5
         
     - name: Generate Allure Report
       if: always()
       run: |
+        echo "Test Results Summary:"
+        echo "CRUD Test Status: ${{ steps.crud_test.outcome }}"
+        echo "Other Tests Status: ${{ steps.other_tests.outcome }}"
+        
         ls -la allure-results || true
         allure generate allure-results --clean -o allure-report || true
         ls -la allure-report || true
@@ -99,5 +142,9 @@ jobs:
         force_orphan: true
         
     - name: Check test status
-      if: steps.run_tests.outcome == 'failure'
-      run: exit 1 
+      if: always()
+      run: |
+        if [[ "${{ steps.crud_test.outcome }}" == "failure" || "${{ steps.other_tests.outcome }}" == "failure" ]]; then
+          echo "Tests failed!"
+          exit 1
+        fi 
