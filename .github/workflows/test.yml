@@ -57,18 +57,18 @@ jobs:
           return $([ "$status_code" -lt 500 ])
         }
 
-        API_BASE="https://restful-api.dev/objects"
+        API_BASE="https://api.restful-api.dev"
         
         # Test main endpoints
         for i in {1..3}; do
           echo "Attempt $i:"
           
           # Test GET all objects
-          check_endpoint "$API_BASE" "GET"
+          check_endpoint "$API_BASE/objects" "GET"
           get_status=$?
           
           # Test GET single object
-          check_endpoint "$API_BASE/1" "GET"
+          check_endpoint "$API_BASE/objects/1" "GET"
           get_single_status=$?
           
           if [ $get_status -eq 0 ] && [ $get_single_status -eq 0 ]; then
@@ -89,7 +89,7 @@ jobs:
       id: crud_test
       continue-on-error: true
       env:
-        BASE_URL: https://restful-api.dev/objects
+        BASE_URL: https://api.restful-api.dev
         PYTHONUNBUFFERED: "1"
       run: |
         echo "Running CRUD sequence test..."
@@ -100,7 +100,7 @@ jobs:
       if: always()
       continue-on-error: true
       env:
-        BASE_URL: https://restful-api.dev/objects
+        BASE_URL: https://api.restful-api.dev
         PYTHONUNBUFFERED: "1"
       run: |
         echo "Running other API tests..."

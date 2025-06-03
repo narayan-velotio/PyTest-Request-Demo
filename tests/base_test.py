@@ -9,9 +9,11 @@ class BaseTest:
     
     def setup_method(self):
         """Setup method run before each test"""
-        self.base_endpoint = Config.BASE_URL
+        self.base_url = Config.BASE_URL
+        self.base_endpoint = "/objects"  # Base endpoint for the objects API
         self.api_client = requests.Session()
-        print(f"\nUsing endpoint: {self.base_endpoint}")
+        print(f"\nUsing base URL: {self.base_url}")
+        print(f"Using endpoint: {self.base_endpoint}")
     
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -54,6 +56,13 @@ class BaseTest:
             "required": ["id", "name", "data"]
         }
         
+    def get_full_url(self, path=""):
+        """Get full URL for a given path"""
+        # Remove leading slash from path if it exists to avoid double slashes
+        if path.startswith("/"):
+            path = path[1:]
+        return f"{self.base_url}/{path}"
+    
     def validate_response_schema(self, response, schema):
         """Validate response against JSON schema"""
         try:
@@ -67,7 +76,9 @@ class BaseTest:
             
     def assert_status_code(self, response, expected_status_code):
         """Assert response status code"""
-        print(f"\nResponse Status: {response.status_code}")
+        print(f"\nRequest URL: {response.request.url}")
+        print(f"Request Method: {response.request.method}")
+        print(f"Response Status: {response.status_code}")
         print(f"Response Headers: {json.dumps(dict(response.headers), indent=2)}")
         print(f"Response Body: {response.text[:1000]}")  # First 1000 chars to avoid huge output
         

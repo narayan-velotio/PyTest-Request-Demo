@@ -8,7 +8,7 @@ class TestCRUDSequence(BaseTest):
         """Test complete CRUD sequence for a MacBook object"""
         # Step 1: GET initial state
         print("\n1. Testing GET - Initial State")
-        response = self.api_client.get(self.base_endpoint)
+        response = self.api_client.get(self.get_full_url("objects"))
         self.assert_status_code(response, 200)
         initial_objects = response.json()
         print(f"Initial object count: {len(initial_objects)}")
@@ -25,7 +25,7 @@ class TestCRUDSequence(BaseTest):
             }
         }
         post_response = self.api_client.post(
-            self.base_endpoint,
+            self.get_full_url("objects"),
             json=create_payload
         )
         self.assert_status_code(post_response, 200)
@@ -47,7 +47,7 @@ class TestCRUDSequence(BaseTest):
             }
         }
         put_response = self.api_client.put(
-            f"{self.base_endpoint}/{object_id}",
+            self.get_full_url(f"objects/{object_id}"),
             json=update_payload
         )
         self.assert_status_code(put_response, 200)
@@ -64,7 +64,7 @@ class TestCRUDSequence(BaseTest):
             }
         }
         patch_response = self.api_client.patch(
-            f"{self.base_endpoint}/{object_id}",
+            self.get_full_url(f"objects/{object_id}"),
             json=patch_payload
         )
         self.assert_status_code(patch_response, 200)
@@ -74,7 +74,7 @@ class TestCRUDSequence(BaseTest):
 
         # Step 5: Verify GET single object
         print("\n5. Testing GET - Verify Updated Object")
-        get_response = self.api_client.get(f"{self.base_endpoint}/{object_id}")
+        get_response = self.api_client.get(self.get_full_url(f"objects/{object_id}"))
         self.assert_status_code(get_response, 200)
         self.validate_response_schema(get_response, product_schema)
         retrieved_object = get_response.json()
@@ -82,12 +82,12 @@ class TestCRUDSequence(BaseTest):
 
         # Step 6: DELETE
         print("\n6. Testing DELETE")
-        delete_response = self.api_client.delete(f"{self.base_endpoint}/{object_id}")
+        delete_response = self.api_client.delete(self.get_full_url(f"objects/{object_id}"))
         self.assert_status_code(delete_response, 200)
 
         # Step 7: Verify deletion
         print("\n7. Verifying Deletion")
-        get_deleted_response = self.api_client.get(f"{self.base_endpoint}/{object_id}")
+        get_deleted_response = self.api_client.get(self.get_full_url(f"objects/{object_id}"))
         self.assert_status_code(get_deleted_response, 404)
 
         print("\nCRUD sequence completed successfully") 
