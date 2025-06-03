@@ -2,6 +2,7 @@ import pytest
 import requests
 from config.config import Config
 import json
+from urllib.parse import urljoin
 from utils.api_client import APIClient
 
 class BaseTest:
@@ -9,7 +10,7 @@ class BaseTest:
     
     def setup_method(self):
         """Setup method run before each test"""
-        self.base_url = Config.BASE_URL
+        self.base_url = Config.BASE_URL.rstrip('/')  # Remove trailing slash if present
         self.base_endpoint = "/objects"  # Base endpoint for the objects API
         self.api_client = requests.Session()
         print(f"\nUsing base URL: {self.base_url}")
@@ -58,10 +59,10 @@ class BaseTest:
         
     def get_full_url(self, path=""):
         """Get full URL for a given path"""
-        # Remove leading slash from path if it exists to avoid double slashes
-        if path.startswith("/"):
-            path = path[1:]
-        return f"{self.base_url}/{path}"
+        # Ensure path starts with a slash
+        if not path.startswith('/'):
+            path = '/' + path
+        return urljoin(self.base_url, path)
     
     def validate_response_schema(self, response, schema):
         """Validate response against JSON schema"""
