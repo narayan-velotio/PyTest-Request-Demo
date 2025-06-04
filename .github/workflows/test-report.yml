@@ -13,8 +13,15 @@ permissions:
   id-token: write
 
 jobs:
-  build-test-report:
+  test-and-report:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      BASE_URL: "https://api.restful-api.dev"  # Using Restful-API.dev for testing
+      ENVIRONMENT: "test"
+      REQUEST_TIMEOUT: "30"
     steps:
       - uses: actions/checkout@v3
       
@@ -39,24 +46,18 @@ jobs:
           allure_results: allure-results
           allure_history: allure-history
           keep_reports: 20
-
-  deploy:
-    needs: build-test-report
-    runs-on: ubuntu-latest
-    
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-      
-    steps:
+          
       - name: Setup Pages
+        if: always()
         uses: actions/configure-pages@v3
         
       - name: Upload artifact
+        if: always()
         uses: actions/upload-pages-artifact@v2
         with:
           path: allure-history
           
       - name: Deploy to GitHub Pages
+        if: always()
         id: deployment
         uses: actions/deploy-pages@v2 
