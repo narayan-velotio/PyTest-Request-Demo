@@ -5,6 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,7 +13,7 @@ permissions:
   id-token: write
 
 jobs:
-  test:
+  build-test-report:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -31,14 +32,6 @@ jobs:
         run: |
           pytest --alluredir=allure-results
           
-      - name: Get Allure history
-        uses: actions/checkout@v3
-        if: always()
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
-          
       - name: Generate Allure Report
         uses: simple-elf/allure-report-action@master
         if: always()
@@ -46,17 +39,24 @@ jobs:
           allure_results: allure-results
           allure_history: allure-history
           keep_reports: 20
-          
+
+  deploy:
+    needs: build-test-report
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    steps:
       - name: Setup Pages
-        if: always()
-        uses: actions/configure-pages@v2
-          
+        uses: actions/configure-pages@v3
+        
       - name: Upload artifact
-        if: always()
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v2
         with:
-          path: 'allure-history'
+          path: allure-history
           
       - name: Deploy to GitHub Pages
-        if: always()
-        uses: actions/deploy-pages@v1 
+        id: deployment
+        uses: actions/deploy-pages@v2 
