@@ -58,6 +58,23 @@ pytest -m smoke
 
 HTML reports are automatically generated after test execution and can be found in `report.html`.
 
+### Allure Reports
+The project is configured to generate Allure reports which are automatically published to GitHub Pages after each push to the main/master branch. To view the reports:
+
+1. Run tests locally with Allure:
+```bash
+pytest --alluredir=allure-results
+```
+
+2. Generate and view report locally:
+```bash
+allure serve allure-results
+```
+
+3. View online reports:
+- Go to your repository's GitHub Pages URL: `https://<username>.github.io/<repository-name>`
+- The latest test report will be available there automatically after each push
+
 ## Writing Tests
 
 1. Create a new test file in the `tests` directory
