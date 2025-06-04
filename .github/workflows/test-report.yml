@@ -13,9 +13,10 @@ permissions:
   id-token: write
   actions: read
 
+# Allow only one concurrent deployment
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   test-and-report:
@@ -28,7 +29,11 @@ jobs:
       ENVIRONMENT: "test"
       REQUEST_TIMEOUT: "30"
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -41,16 +46,10 @@ jobs:
           pip install -r requirements.txt
           
       - name: Run tests with Allure
-        run: |
-          pytest --alluredir=allure-results
-          
-      - name: Get Allure history
-        uses: actions/checkout@v3
         if: always()
         continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
+        run: |
+          pytest --alluredir=allure-results
           
       - name: Generate Allure Report
         uses: simple-elf/allure-report-action@master
@@ -60,20 +59,13 @@ jobs:
           allure_history: allure-history
           keep_reports: 20
           
-      - name: Store Allure Report
-        uses: actions/upload-artifact@v3
+      - name: Upload Pages artifact
         if: always()
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: allure-report
-          path: allure-history/
-          retention-days: 30
+          path: allure-history
           
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-        if: always()
-        
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v2
+        id: deployment
         if: always()
-        with:
-          path: allure-history 
+        uses: actions/deploy-pages@v2 
